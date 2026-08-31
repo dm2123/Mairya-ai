@@ -1,32 +1,43 @@
-import 'reflect-metadata'
 import express, { Express, Request, Response, NextFunction } from 'express'
 import helmet from 'helmet'
 import cors from 'cors'
 import morgan from 'morgan'
-import { RateLimitConfig, RateLimit } from '../packages/shared/src/rate-limit'
-import { ApiResponse, ApiError } from '../packages/shared/src/api-response'
-import { RoleEnum, StatusEnum, ProjectState, AgentState, DeploymentState } from '../packages/shared/src/enums'
-import { AuthUser, SessionData } from '../packages/shared/src/auth-types'
+import type { RateLimitConfig } from './shared/rate-limit'
+import type { ApiResponse, ApiError } from './shared/api-response'
+import type { 
+  RoleEnum, StatusEnum, ProjectState, AgentState, DeploymentState 
+} from './shared/enums'
+import type { AuthUser, SessionData } from './shared/auth-types'
+
+import { 
+  isDevelopment, isTest, isStaging, isProduction,
+  NODE_ENV, PORT, HOST, API_PREFIX,
+  CORS_ORIGINS, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS,
+  DATABASE_URL, AI_PROVIDER, AI_BASE_URL, AI_API_KEY, AI_DEFAULT_MODEL, AI_STATUS,
+  GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO, GITHUB_STATUS,
+  EMAIL_PROVIDER, EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD, EMAIL_FROM, EMAIL_STATUS,
+  WHATSAPP_PROVIDER, WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_VERIFY_TOKEN, WHATSAPP_STATUS,
+  PAYMENT_PROVIDER, PAYMENT_PUBLIC_KEY, PAYMENT_SECRET_KEY, PAYMENT_WEBHOOK_SECRET, PAYMENT_STATUS,
+  STORAGE_PROVIDER, STORAGE_BASE_PATH,
+  DEPLOYMENT_PROVIDER, DEPLOYMENT_ENV,
+  JWT_SECRET, SESSION_SECRET,
+  LOG_LEVEL,
+  getIntegrationStatus
+} from './config'
 
 const app: Express = express()
-const PORT = process.env.PORT || 3000
+const PORT_VALUE = PORT
+const HOST_VALUE = HOST
+const API_PREFIX_VALUE = API_PREFIX
 
 // Middleware
 app.use(helmet())
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+  origin: CORS_ORIGINS,
   credentials: true
 }))
 app.use(morgan('combined'))
 app.use(express.json({ limit: '10kb' }))
-
-// Rate limiting foundation
-const rateLimitConfig: RateLimitConfig = {
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false
-}
 
 // Health check route
 app.get('/health', (req: Request, res: Response) => {
@@ -42,7 +53,7 @@ app.get('/health', (req: Request, res: Response) => {
 })
 
 // API v1 route prefix
-const apiPrefix = '/api/v1'
+const apiPrefix = API_PREFIX_VALUE || '/api/v1'
 
 // Basic auth status route
 app.get(`${apiPrefix}/status`, (req: Request, res: Response) => {
@@ -66,13 +77,15 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   })
 })
 
-// Start server
+// Start server when run directly
 let server: any
 if (require.main === module) {
-  server = app.listen(PORT, () => {
-    console.log(`🚀 Maurya AI API v1 listening on port ${PORT}`)
-    console.log(`📍 Health: http://localhost:${PORT}/health`)
-    console.log(`📍 API: http://localhost:${PORT}${apiPrefix}/status`)
+  app.listen(PORT_VALUE, () => {
+    console.log(`🚀 Maurya AI API v1 listening on port ${PORT_VALUE}`)
+    console.log(`📍 Health: http://localhost:${PORT_VALUE}/health`)
+    console.log(`📍 API: http://localhost:${PORT_VALUE}${API_PREFIX_VALUE}/status`)
+    const status = getIntegrationStatus()
+    console.log(`📊 Integration status: ${JSON.stringify(status)}`)
   })
 }
 

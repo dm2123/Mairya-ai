@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3'
-import { BaseEntity, CreatedUpdatedFields } from '../shared/src/base-entity'
-import { StatusEnum, RoleEnum, ProjectState, AgentState, DeploymentState } from '../shared/src/enums'
+import { BaseEntity, CreatedUpdatedFields } from './base-entity'
+import { StatusEnum, RoleEnum, ProjectState, AgentState, DeploymentState } from './enums'
 
 export interface DatabaseConfig {
   filename: string
@@ -49,7 +49,7 @@ export class DatabaseManager {
     const countStmt = this.db.prepare('SELECT COUNT(*) as count FROM users')
     const dataStmt = this.db.prepare('SELECT * FROM users LIMIT ? OFFSET ?')
     
-    const total = countStmt.get().count
+    const total = (countStmt.get() as any).count
     const data = dataStmt.all(pagination.limit, offset)
     
     return { data, total }
@@ -82,7 +82,7 @@ export class DatabaseManager {
     const dataStmt = this.db.prepare(`SELECT * FROM leads ${whereClause} LIMIT ? OFFSET ?`)
     
     const params = organizationId ? [organizationId] : []
-    const total = countStmt.get(...params).count
+    const total = (countStmt.get() as any).count
     const data = dataStmt.all(...params, pagination.limit, (pagination.page - 1) * pagination.limit)
     
     return { data, total }
@@ -113,7 +113,7 @@ export class DatabaseManager {
     const dataStmt = this.db.prepare(`SELECT * FROM projects ${whereClause} LIMIT ? OFFSET ?`)
     
     const params = founderId ? [founderId] : []
-    const total = countStmt.get(...params).count
+    const total = (countStmt.get() as any).count
     const data = dataStmt.all(...params, pagination.limit, (pagination.page - 1) * pagination.limit)
     
     return { data, total }

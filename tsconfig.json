@@ -2,28 +2,32 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "dist",
-    "module": "nodenext",
+    "module": "CommonJS",
     "target": "esnext",
-    "moduleResolution": "bundler",
-    "freezePackageJson": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "devtool": "source-map",
-    "noUncheckedIncrementalMemory": true,
-    "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    "baseUrl": ".",
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    "allowJs": true,
+    "skipLibCheck": true,
+
     "paths": {
-      "/*": ["/*"]
+      "/*": ["./*"],
+      "@maurya/shared": ["./packages/shared/src"],
+      "@maurya/database": ["./packages/database/src"],
+      "@maurya/api": ["./apps/api/src"]
     }
   },
   "include": [
-    "apps/**/*",
-    "packages/**/*",
-    "types/**/*"
+    "apps/api/src/**/*",
+    "packages/shared/src/**/*",
+    "packages/database/src/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }
