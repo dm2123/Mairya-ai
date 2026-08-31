@@ -12,10 +12,12 @@
   "author": "Maurya AI",
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^11.0.0"
+    "better-sqlite3": "^11.0.0",
+    "mysql2": "^3.9.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",
+    "@types/mysql2": "^2.0.0",
     "@types/node": "^20.14.2",
     "typescript": "^5.5.2"
   }
