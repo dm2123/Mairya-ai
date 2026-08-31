@@ -1,0 +1,22 @@
+{
+  "name": "mairya-ai-database",
+  "version": "1.0.0",
+  "description": "Maurya AI - Database Package",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["maurya", "ai", "database"],
+  "author": "Maurya AI",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.14.2",
+    "typescript": "^5.5.2"
+  }
+}

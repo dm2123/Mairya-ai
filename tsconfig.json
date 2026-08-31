@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "module": "nodenext",
+    "target": "esnext",
+    "moduleResolution": "bundler",
+    "freezePackageJson": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "devtool": "source-map",
+    "noUncheckedIncrementalMemory": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "baseUrl": ".",
+    "paths": {
+      "/*": ["/*"]
+    }
+  },
+  "include": [
+    "apps/**/*",
+    "packages/**/*",
+    "types/**/*"
+  ],
+  "exclude": ["node_modules", "dist"]
+}
