@@ -157,6 +157,90 @@ export class SQLiteDatabase {
       CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
       CREATE INDEX IF NOT EXISTS idx_projects_organizationId ON projects(organizationId);
       CREATE INDEX IF NOT EXISTS idx_tasks_projectId ON tasks(projectId);
+
+      // AI infrastructure tables
+      CREATE TABLE IF NOT EXISTS ai_providers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        model TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        context_window INTEGER,
+        max_output_tokens INTEGER,
+        timeout_ms INTEGER,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_models (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        model_id TEXT NOT NULL,
+        provider_id TEXT NOT NULL,
+        context_window INTEGER,
+        max_output_tokens INTEGER,
+        temperature_range_min REAL,
+        temperature_range_max REAL,
+        system_prompt_supported INTEGER NOT NULL DEFAULT 0,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (provider_id) REFERENCES ai_providers(id) ON DELETE RESTRICT
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_requests (
+        id TEXT PRIMARY KEY,
+        organization_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        provider_id TEXT NOT NULL,
+        model_id TEXT NOT NULL,
+        prompt TEXT NOT NULL,
+        temperature REAL,
+        max_tokens INTEGER,
+        system_prompt TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        request_timestamp TEXT NOT NULL,
+        completed_at TEXT,
+        output TEXT,
+        prompt_tokens INTEGER NOT NULL DEFAULT 0,
+        completion_tokens INTEGER NOT NULL DEFAULT 0,
+        total_tokens INTEGER NOT NULL DEFAULT 0,
+        cost REAL NOT NULL DEFAULT 0,
+        finish_reason TEXT,
+        FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
+        FOREIGN KEY (provider_id) REFERENCES ai_providers(id) ON DELETE RESTRICT,
+        FOREIGN KEY (model_id) REFERENCES ai_models(id) ON DELETE RESTRICT
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_usage (
+        id TEXT PRIMARY KEY,
+        organization_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        ai_request_id TEXT NOT NULL,
+        provider_id TEXT NOT NULL,
+        model_id TEXT NOT NULL,
+        prompt_tokens INTEGER NOT NULL DEFAULT 0,
+        completion_tokens INTEGER NOT NULL DEFAULT 0,
+        total_tokens INTEGER NOT NULL DEFAULT 0,
+        cost REAL NOT NULL DEFAULT 0,
+        timestamp TEXT NOT NULL,
+        success INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
+        FOREIGN KEY (ai_request_id) REFERENCES ai_requests(id) ON DELETE CASCADE,
+        FOREIGN KEY (provider_id) REFERENCES ai_providers(id) ON DELETE RESTRICT,
+        FOREIGN KEY (model_id) REFERENCES ai_models(id) ON DELETE RESTRICT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ai_requests_organization_id ON ai_requests(organization_id);
+      CREATE INDEX IF NOT EXISTS idx_ai_requests_user_id ON ai_requests(user_id);
+      CREATE INDEX IF NOT EXISTS idx_ai_requests_provider_id ON ai_requests(provider_id);
+      CREATE INDEX IF NOT EXISTS idx_ai_requests_status ON ai_requests(status);
+      CREATE INDEX IF NOT EXISTS idx_ai_usage_organization_id ON ai_usage(organization_id);
+      CREATE INDEX IF NOT EXISTS idx_ai_usage_user_id ON ai_usage(user_id);
+      CREATE INDEX IF NOT EXISTS idx_ai_usage_ai_request_id ON ai_usage(ai_request_id);
+      CREATE INDEX IF NOT EXISTS idx_ai_usage_timestamp ON ai_usage(timestamp);
     `)
   }
 
