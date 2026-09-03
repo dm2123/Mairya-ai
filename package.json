@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/dm2123/Mairya-ai#readme",
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^9.6.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -26,5 +27,8 @@
     "@types/morgan": "^1.9.10",
     "@types/node": "^26.4.0",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0"
   }
 }

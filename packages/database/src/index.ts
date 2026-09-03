@@ -244,6 +244,129 @@ export class SQLiteDatabase {
     `)
   }
 
+  private initializeP9Schema() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS execution_jobs (
+        id TEXT PRIMARY KEY,
+        organization_id TEXT NOT NULL,
+        project_id TEXT,
+        generation_version_id TEXT,
+        status TEXT NOT NULL DEFAULT 'created',
+        priority INTEGER NOT NULL DEFAULT 0,
+        created_by TEXT,
+        started_at TEXT,
+        completed_at TEXT,
+        failed_at TEXT,
+        cancelled_at TEXT,
+        progress INTEGER NOT NULL DEFAULT 0,
+        error_code TEXT,
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+        FOREIGN KEY (generation_version_id) REFERENCES generation_versions(id) ON DELETE SET NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS execution_tasks (
+        id TEXT PRIMARY KEY,
+        execution_job_id TEXT NOT NULL,
+        generation_task_id TEXT,
+        status TEXT NOT NULL DEFAULT 'created',
+        attempt INTEGER NOT NULL DEFAULT 1,
+        max_attempts INTEGER NOT NULL DEFAULT 3,
+        dependencies TEXT NOT NULL DEFAULT '[]',
+        started_at TEXT,
+        completed_at TEXT,
+        exit_code INTEGER,
+        error_code TEXT,
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (execution_job_id) REFERENCES execution_jobs(id) ON DELETE CASCADE,
+        FOREIGN KEY (generation_task_id) REFERENCES generation_tasks(id) ON DELETE SET NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS execution_logs (
+        id TEXT PRIMARY KEY,
+        execution_job_id TEXT NOT NULL,
+        execution_task_id TEXT,
+        status TEXT NOT NULL DEFAULT 'info',
+        message TEXT NOT NULL,
+        exit_code INTEGER,
+        error_code TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (execution_job_id) REFERENCES execution_jobs(id) ON DELETE CASCADE,
+        FOREIGN KEY (execution_task_id) REFERENCES execution_tasks(id) ON DELETE SET NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS execution_artifacts (
+        id TEXT PRIMARY KEY,
+        execution_job_id TEXT NOT NULL,
+        execution_task_id TEXT,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        path TEXT NOT NULL,
+        checksum TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (execution_job_id) REFERENCES execution_jobs(id) ON DELETE CASCADE,
+        FOREIGN KEY (execution_task_id) REFERENCES execution_tasks(id) ON DELETE SET NULL
+      );
+    `)
+  }
+
+
+  // P9 Execution Job Service
+  createExecutionJob(job: { organizationId: string; projectId?: string; generationVersionId?: string; priority?: number; createdBy?: string }) {
+    const id = crypto.randomUUID()
+    const stmt = this.db.prepare(`INSERT INTO execution_jobs (id, organization_id, project_id, generation_version_id, status, priority, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, 'created', ?, ?, datetime('now'), datetime('now'))`)
+    stmt.run(id, job.organizationId, job.projectId, job.generationVersionId, job.priority || 0, job.createdBy)
+    return this.getExecutionJob(id)
+  }
+
+  getExecutionJob(id: string) {
+    return this.db.prepare('SELECT * FROM execution_jobs WHERE id = ?').get(id)
+  }
+
+  listExecutionJobs(pagination?: { page?: number; limit?: number }, organizationId?: string, projectId?: string, status?: string) {
+    const page = pagination?.page || 1
+    const limit = pagination?.limit || 20
+    const offset = (page - 1) * limit
+    let whereClause = ''
+    const params: any[] = []
+
+    if (organizationId) {
+      whereClause += 'WHERE organization_id = ? '
+      params.push(organizationId)
+    }
+    if (projectId) {
+      if (whereClause) whereClause += 'AND '
+      whereClause += 'project_id = ? '
+      params.push(projectId)
+    }
+    if (status) {
+      if (whereClause) whereClause += 'AND '
+      whereClause += 'status = ? '
+      params.push(status)
+    }
+
+    const countStmt = this.db.prepare(`SELECT COUNT(*) as count FROM execution_jobs ${whereClause}`)
+    const dataStmt = this.db.prepare(`SELECT * FROM execution_jobs ${whereClause} LIMIT ? OFFSET ?`)
+
+    params.push(limit, offset)
+    const total = (countStmt.get() as any).count
+    const rows = dataStmt.all(...params)
+    const data = rows.map((row: any) => ({ id: row.id, ...row }))
+
+    return { data, total, hasMore: offset + limit < total }
+  }
+
+  cancelExecutionJob(id: string, cancelledBy: string) {
+    const stmt = this.db.prepare(`UPDATE execution_jobs SET status = 'cancelled', cancelled_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`)
+    stmt.run(id)
+    return this.getExecutionJob(id)
+  }
+
   // User operations
   getUser(id: string) {
     return this.db.prepare('SELECT * FROM users WHERE id = ?').get(id)
